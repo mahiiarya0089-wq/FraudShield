@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FraudShield — Intelligent Transaction Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<style>
+/* ═══════════════════════════════════════
+   CSS VARIABLES & RESET
+═══════════════════════════════════════ */
+:root {
+  --bg:        #0a0c10;
+  --surface:   #111318;
+  --card:      #161a22;
+  --border:    #1e2433;
+  --border2:   #2a3145;
+  --text:      #e8ecf4;
+  --muted:     #6b7a99;
+  --accent:    #00e5ff;
+  --accent2:   #7c3aed;
+  --green:     #00e676;
+  --red:       #ff1744;
+  --orange:    #ff9100;
+  --yellow:    #ffd600;
+  --glow:      0 0 20px rgba(0,229,255,.25);
+  --glow-red:  0 0 20px rgba(255,23,68,.35);
+  --radius:    12px;
+  --transition: .22s cubic-bezier(.4,0,.2,1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* ═══════════════════════════════════════
+   BACKGROUND GRID EFFECT
+═══════════════════════════════════════ */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(0,229,255,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════
+   AUTH SCREEN
+═══════════════════════════════════════ */
+#auth-screen {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+}
+#auth-screen.hidden { display: none; }
+
+.auth-container {
+  width: 420px;
+  animation: slideUp .5s ease forwards;
+}
+
+@keyframes slideUp {
+  from { opacity:0; transform: translateY(30px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+.auth-logo {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.auth-logo .logo-icon {
+  width: 64px; height: 64px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 18px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  margin-bottom: 16px;
+  box-shadow: var(--glow);
+  animation: pulse-logo 3s ease infinite;
+}
+@keyframes pulse-logo {
+  0%,100% { box-shadow: 0 0 20px rgba(0,229,255,.3); }
+  50%      { box-shadow: 0 0 40px rgba(0,229,255,.6); }
+}
+.auth-logo h1 {
+  font-size: 28px; font-weight: 800;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.auth-logo p { color: var(--muted); font-size: 14px; margin-top: 6px; font-family:'Space Mono',monospace; }
+
+.auth-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 36px;
+  box-shadow: 0 24px 80px rgba(0,0,0,.6);
+}
+
+.auth-tabs {
+  display: flex; gap: 4px;
+  background: var(--surface);
+  border-radius: 10px; padding: 4px;
+  margin-bottom: 28px;
+}
+.auth-tab {
+  flex: 1; padding: 10px;
+  background: transparent;
+  border: none; cursor: pointer;
+  color: var(--muted); font-family: 'Syne', sans-serif;
+  font-size: 14px; font-weight: 600;
+  border-radius: 7px; transition: var(--transition);
+}
+.auth-tab.active {
+  background: var(--accent);
+  color: #000;
+}
+
+.form-group { margin-bottom: 18px; }
+.form-group label {
+  display: block; font-size: 12px; font-weight: 700;
+  color: var(--muted); text-transform: uppercase; letter-spacing: 1px;
+  margin-bottom: 8px; font-family: 'Space Mono', monospace;
+}
+.form-group input {
+  width: 100%; padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text); font-family: 'Syne', sans-serif; font-size: 15px;
+  outline: none; transition: var(--transition);
+}
+.form-group input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,229,255,.12);
+}
+
+.btn-primary {
+  width: 100%; padding: 14px;
+  background: linear-gradient(135deg, var(--accent), #0099bb);
+  border: none; border-radius: var(--radius);
+  color: #000; font-family: 'Syne', sans-serif;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  transition: var(--transition); letter-spacing: .5px;
+  position: relative; overflow: hidden;
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: var(--glow); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary::after {
+  content:''; position:absolute; inset:0;
+  background: linear-gradient(rgba(255,255,255,.15), transparent);
+  pointer-events: none;
+}
+
+.auth-message {
+  margin-top: 14px; padding: 12px 16px;
+  border-radius: var(--radius); font-size: 13px;
+  font-family: 'Space Mono', monospace;
+  display: none;
+}
+.auth-message.success { background: rgba(0,230,118,.12); border: 1px solid rgba(0,230,118,.3); color: var(--green); display:block; }
+.auth-message.error   { background: rgba(255,23,68,.12);  border: 1px solid rgba(255,23,68,.3);  color: var(--red);   display:block; }
+
+/* ═══════════════════════════════════════
+   MAIN APP
+═══════════════════════════════════════ */
+#app { display: none; min-height: 100vh; position: relative; z-index: 1; }
+#app.visible { display: flex; }
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 260px; min-height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  padding: 28px 0;
+  position: fixed; top: 0; left: 0; bottom: 0;
+  z-index: 50;
+}
+.sidebar-logo {
+  padding: 0 24px 28px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-logo .s-icon {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 18px; margin-bottom: 10px;
+  box-shadow: var(--glow);
+}
+.sidebar-logo h2 { font-size: 18px; font-weight: 800; color: var(--text); }
+.sidebar-logo span { font-size: 11px; color: var(--muted); font-family:'Space Mono',monospace; }
+
+.sidebar-nav { padding: 20px 12px; flex: 1; }
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px; border-radius: 10px;
+  cursor: pointer; color: var(--muted);
+  font-size: 14px; font-weight: 600;
+  transition: var(--transition); margin-bottom: 4px;
+  border: 1px solid transparent;
+}
+.nav-item:hover { color: var(--text); background: var(--card); border-color: var(--border); }
+.nav-item.active { color: var(--accent); background: rgba(0,229,255,.07); border-color: rgba(0,229,255,.2); }
+.nav-item .ni { font-size: 18px; }
+
+.sidebar-user {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+}
+.user-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent2), var(--accent));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 15px; color: #fff;
+  flex-shrink: 0;
+}
+.user-info { flex: 1; min-width: 0; }
+.user-info .uname { font-size: 14px; font-weight: 700; truncate; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-info .urole { font-size: 11px; color: var(--muted); font-family:'Space Mono',monospace; }
+.logout-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); font-size: 18px;
+  transition: var(--transition); padding: 4px;
+}
+.logout-btn:hover { color: var(--red); }
+
+/* ── Main content ── */
+.main-content {
+  margin-left: 260px; flex: 1; padding: 32px;
+  min-height: 100vh;
+}
+
+.page { display: none; animation: fadeIn .35s ease; }
+.page.active { display: block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+.page-header { margin-bottom: 28px; }
+.page-header h2 { font-size: 26px; font-weight: 800; }
+.page-header p { color: var(--muted); font-size: 14px; margin-top: 4px; font-family:'Space Mono',monospace; }
+
+/* ── Stat Cards ── */
+.stats-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px; margin-bottom: 28px;
+}
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  position: relative; overflow: hidden;
+  transition: var(--transition);
+}
+.stat-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+.stat-card::before {
+  content:''; position: absolute;
+  top: 0; left: 0; right: 0; height: 2px;
+}
+.stat-card.s-blue::before  { background: linear-gradient(90deg, var(--accent), transparent); }
+.stat-card.s-green::before { background: linear-gradient(90deg, var(--green), transparent); }
+.stat-card.s-red::before   { background: linear-gradient(90deg, var(--red), transparent); }
+.stat-card.s-purple::before{ background: linear-gradient(90deg, var(--accent2), transparent); }
+.stat-card.s-orange::before{ background: linear-gradient(90deg, var(--orange), transparent); }
+
+.stat-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-family:'Space Mono',monospace; }
+.stat-value { font-size: 30px; font-weight: 800; margin: 8px 0 4px; }
+.stat-sub   { font-size: 12px; color: var(--muted); }
+.stat-icon  { position: absolute; right: 20px; top: 18px; font-size: 28px; opacity: .2; }
+
+/* ── Send Transaction Form ── */
+.txn-form-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px; max-width: 560px;
+}
+.txn-form-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 24px; }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+.risk-meter {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 18px; display: none;
+}
+.risk-meter.show { display: block; }
+.risk-meter-label { font-size: 12px; color: var(--muted); font-family:'Space Mono',monospace; margin-bottom: 8px; display:flex; justify-content: space-between; }
+.risk-bar-track {
+  height: 8px; background: var(--border);
+  border-radius: 4px; overflow: hidden;
+}
+.risk-bar-fill {
+  height: 100%; border-radius: 4px;
+  transition: width .5s ease, background .5s ease;
+  background: var(--green);
+}
+
+/* ── Transaction Table ── */
+.table-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.table-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.table-header h3 { font-size: 16px; font-weight: 700; }
+.badge {
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; font-family:'Space Mono',monospace;
+}
+.badge-red    { background: rgba(255,23,68,.15);   color: var(--red);    border: 1px solid rgba(255,23,68,.3); }
+.badge-green  { background: rgba(0,230,118,.12);   color: var(--green);  border: 1px solid rgba(0,230,118,.3); }
+.badge-orange { background: rgba(255,145,0,.12);   color: var(--orange); border: 1px solid rgba(255,145,0,.3); }
+.badge-blue   { background: rgba(0,229,255,.10);   color: var(--accent); border: 1px solid rgba(0,229,255,.3); }
+
+table { width: 100%; border-collapse: collapse; }
+th {
+  text-align: left; padding: 12px 22px;
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1px; color: var(--muted); font-family:'Space Mono',monospace;
+  border-bottom: 1px solid var(--border); background: var(--surface);
+}
+td { padding: 14px 22px; border-bottom: 1px solid var(--border); font-size: 14px; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,.02); }
+.amount-cell { font-family:'Space Mono',monospace; font-weight: 700; }
+
+/* ── Fraud Alert Modal ── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.8); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn .3s ease;
+}
+.modal-overlay.hidden { display: none; }
+.modal {
+  background: var(--card);
+  border: 1px solid rgba(255,23,68,.4);
+  border-radius: 20px; padding: 36px;
+  max-width: 460px; width: 90%;
+  box-shadow: var(--glow-red), 0 40px 120px rgba(0,0,0,.8);
+  animation: modalIn .4s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+@keyframes modalIn {
+  from { opacity:0; transform: scale(.85) translateY(20px); }
+  to   { opacity:1; transform: scale(1) translateY(0); }
+}
+.modal-icon {
+  width: 60px; height: 60px;
+  background: rgba(255,23,68,.15);
+  border: 2px solid rgba(255,23,68,.4);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 26px; margin: 0 auto 20px;
+  animation: shake .5s ease;
+}
+@keyframes shake {
+  0%,100%{transform:translateX(0)}
+  25%{transform:translateX(-8px)}
+  75%{transform:translateX(8px)}
+}
+.modal h3 { text-align:center; font-size: 20px; font-weight: 800; color: var(--red); margin-bottom: 8px; }
+.modal p  { text-align:center; color: var(--muted); font-size: 13px; margin-bottom: 20px; font-family:'Space Mono',monospace; }
+.flags-list { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 20px; }
+.flag-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 12px; padding: 6px 0;
+  border-bottom: 1px solid var(--border); font-family:'Space Mono',monospace;
+  color: var(--orange);
+}
+.flag-item:last-child { border: none; }
+.flag-item::before { content: '⚠'; flex-shrink: 0; margin-top: 1px; }
+.score-display {
+  text-align: center; margin-bottom: 20px;
+}
+.score-circle {
+  display: inline-flex; flex-direction:column;
+  align-items: center; justify-content: center;
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  border: 4px solid var(--red);
+  box-shadow: 0 0 30px rgba(255,23,68,.4);
+}
+.score-num  { font-size: 32px; font-weight: 800; color: var(--red); line-height: 1; }
+.score-lbl  { font-size: 10px; color: var(--muted); font-family:'Space Mono',monospace; }
+.modal-actions { display:flex; gap: 12px; }
+.btn-dismiss {
+  flex:1; padding: 12px;
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: var(--radius); color: var(--text);
+  font-family:'Syne',sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: var(--transition);
+}
+.btn-dismiss:hover { border-color: var(--muted); }
+.btn-confirm-fraud {
+  flex:1; padding: 12px;
+  background: rgba(255,23,68,.15); border: 1px solid rgba(255,23,68,.4);
+  border-radius: var(--radius); color: var(--red);
+  font-family:'Syne',sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: var(--transition);
+}
+.btn-confirm-fraud:hover { background: rgba(255,23,68,.25); }
+
+/* ── Safe Transaction Toast ── */
+.toast {
+  position: fixed; bottom: 30px; right: 30px;
+  background: var(--card); border: 1px solid rgba(0,230,118,.4);
+  border-radius: var(--radius); padding: 16px 22px;
+  display: flex; align-items: center; gap: 12px;
+  z-index: 300; box-shadow: 0 0 30px rgba(0,230,118,.2);
+  transform: translateY(100px); opacity: 0;
+  transition: .4s cubic-bezier(.34,1.56,.64,1);
+  font-size: 14px; font-weight: 600; max-width: 340px;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast-icon { font-size: 22px; }
+
+/* ── Empty State ── */
+.empty-state {
+  text-align: center; padding: 60px 20px;
+  color: var(--muted);
+}
+.empty-state .e-icon { font-size: 48px; margin-bottom: 16px; opacity: .4; }
+.empty-state p { font-family:'Space Mono',monospace; font-size: 13px; }
+
+/* ── Alerts / Education ── */
+.alert-box {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px 24px;
+  margin-bottom: 16px; display: flex; gap: 16px;
+  align-items: flex-start; transition: var(--transition);
+}
+.alert-box:hover { border-color: var(--border2); }
+.alert-box .a-icon { font-size: 24px; flex-shrink: 0; }
+.alert-box h4 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.alert-box p  { font-size: 13px; color: var(--muted); font-family:'Space Mono',monospace; line-height: 1.6; }
+
+/* ── Loading spinner ── */
+.spinner {
+  width: 18px; height: 18px;
+  border: 2px solid rgba(0,0,0,.2);
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+  display: inline-block; vertical-align: middle; margin-right: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .sidebar { width: 200px; }
+  .main-content { margin-left: 200px; padding: 20px; }
+  .form-row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     AUTH SCREEN
+═══════════════════════════════════════ -->
+<div id="auth-screen">
+  <div class="auth-container">
+    <div class="auth-logo">
+      <div class="logo-icon">🛡️</div>
+      <h1>FraudShield</h1>
+      <p>// intelligent transaction monitor</p>
+    </div>
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchTab('login')">Login</button>
+        <button class="auth-tab" onclick="switchTab('register')">Register</button>
+      </div>
+
+      <!-- Login Form -->
+      <div id="login-form">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="login-username" placeholder="Enter your username" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="login-password" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin()" />
+        </div>
+        <button class="btn-primary" onclick="doLogin()">Login →</button>
+      </div>
+
+      <!-- Register Form -->
+      <div id="register-form" style="display:none">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="reg-username" placeholder="Choose a username" />
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="reg-email" placeholder="your@email.com" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="reg-password" placeholder="Min 6 characters" />
+        </div>
+        <button class="btn-primary" onclick="doRegister()">Create Account →</button>
+      </div>
+
+      <div id="auth-msg" class="auth-message"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     MAIN APP
+═══════════════════════════════════════ -->
+<div id="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-icon">🛡️</div>
+      <h2>FraudShield</h2>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" onclick="showPage('dashboard')">
+        <span class="ni">📊</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="showPage('send')">
+        <span class="ni">💸</span> Send Money
+      </div>
+      <div class="nav-item" onclick="showPage('history')">
+        <span class="ni">📋</span> History
+      </div>
+      <div class="nav-item" onclick="showPage('alerts')">
+        <span class="ni">🚨</span> Fraud Rules
+      </div>
+    </nav>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="sidebar-avatar">U</div>
+      <div class="user-info">
+        <div class="uname" id="sidebar-uname">User</div>
+        <div class="urole">Account Holder</div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()" title="Logout">⏻</button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+
+    <!-- ── DASHBOARD ── -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-header">
+        <h2>Dashboard Overview</h2>
+        <p>// real-time fraud monitoring for your account</p>
+      </div>
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card s-blue">
+          <div class="stat-icon">💰</div>
+          <div class="stat-label">Balance</div>
+          <div class="stat-value" id="stat-balance">₹—</div>
+          <div class="stat-sub">Available funds</div>
+        </div>
+        <div class="stat-card s-green">
+          <div class="stat-icon">✅</div>
+          <div class="stat-label">Safe Transactions</div>
+          <div class="stat-value" id="stat-safe">—</div>
+          <div class="stat-sub">No anomaly detected</div>
+        </div>
+        <div class="stat-card s-red">
+          <div class="stat-icon">🚨</div>
+          <div class="stat-label">Fraud Detected</div>
+          <div class="stat-value" id="stat-fraud">—</div>
+          <div class="stat-sub">High-risk transactions</div>
+        </div>
+        <div class="stat-card s-purple">
+          <div class="stat-icon">📈</div>
+          <div class="stat-label">Total Transactions</div>
+          <div class="stat-value" id="stat-total">—</div>
+          <div class="stat-sub">All time</div>
+        </div>
+        <div class="stat-card s-orange">
+          <div class="stat-icon">⚠️</div>
+          <div class="stat-label">Fraud Rate</div>
+          <div class="stat-value" id="stat-rate">—%</div>
+          <div class="stat-sub">Of all transactions</div>
+        </div>
+      </div>
+
+      <!-- Recent Transactions -->
+      <div class="table-card">
+        <div class="table-header">
+          <h3>Recent Transactions</h3>
+          <span class="badge badge-blue" id="recent-count">0 records</span>
+        </div>
+        <div id="recent-table-body">
+          <div class="empty-state">
+            <div class="e-icon">📭</div>
+            <p>No transactions yet. Send some money to get started.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SEND MONEY ── -->
+    <div id="page-send" class="page">
+      <div class="page-header">
+        <h2>Send Money</h2>
+        <p>// transactions are analyzed in real-time for fraud</p>
+      </div>
+      <div class="txn-form-card">
+        <h3>🔄 New Transaction</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Receiver Name / UPI ID</label>
+            <input type="text" id="txn-receiver" placeholder="e.g. Rahul / 9876@upi" />
+          </div>
+          <div class="form-group">
+            <label>Amount (₹)</label>
+            <input type="number" id="txn-amount" placeholder="0.00" min="1" oninput="updateRiskPreview()" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Description (optional)</label>
+          <input type="text" id="txn-desc" placeholder="e.g. Monthly rent, Birthday gift..." />
+        </div>
+
+        <!-- Live risk preview -->
+        <div class="risk-meter" id="risk-preview">
+          <div class="risk-meter-label">
+            <span>⚡ PRE-ANALYSIS RISK SCORE</span>
+            <span id="risk-percent-label">0%</span>
+          </div>
+          <div class="risk-bar-track">
+            <div class="risk-bar-fill" id="risk-bar" style="width:0%"></div>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="send-btn" onclick="sendTransaction()">
+          Send Transaction ➜
+        </button>
+
+        <div id="send-msg" class="auth-message" style="margin-top:14px"></div>
+      </div>
+    </div>
+
+    <!-- ── HISTORY ── -->
+    <div id="page-history" class="page">
+      <div class="page-header">
+        <h2>Transaction History</h2>
+        <p>// complete log with fraud analysis results</p>
+      </div>
+      <div class="table-card">
+        <div class="table-header">
+          <h3>All Transactions</h3>
+          <span class="badge badge-blue" id="history-count">0 records</span>
+        </div>
+        <div id="history-table-body">
+          <div class="empty-state">
+            <div class="e-icon">📋</div>
+            <p>Transaction history will appear here.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── FRAUD RULES ── -->
+    <div id="page-alerts" class="page">
+      <div class="page-header">
+        <h2>Fraud Detection Rules</h2>
+        <p>// how our engine detects suspicious transactions</p>
+      </div>
+
+      <div class="alert-box">
+        <div class="a-icon">💰</div>
+        <div>
+          <h4>Rule 1 — High Value Transaction (+40 pts)</h4>
+          <p>Any transaction above ₹50,000 is automatically flagged as potentially fraudulent. Real banks call this "Large Value Transaction Monitoring". Additional +15 pts if above ₹25,000.</p>
+        </div>
+      </div>
+      <div class="alert-box">
+        <div class="a-icon">⚡</div>
+        <div>
+          <h4>Rule 2 — Rapid Fire / Frequency Check (+45 pts)</h4>
+          <p>4+ transactions within 60 seconds = RAPID_FIRE alert. 2–3 transactions = FREQUENT alert (+25 pts). This detects card testing attacks and account takeovers.</p>
+        </div>
+      </div>
+      <div class="alert-box">
+        <div class="a-icon">🌙</div>
+        <div>
+          <h4>Rule 3 — Odd Hour Detection (+15 pts)</h4>
+          <p>Transactions between 12:00 AM – 5:00 AM are suspicious. Most fraudulent transactions happen at odd hours when users are sleeping.</p>
+        </div>
+      </div>
+      <div class="alert-box">
+        <div class="a-icon">🔢</div>
+        <div>
+          <h4>Rule 4 — Round Number Suspicion (+10 pts)</h4>
+          <p>Fraudsters often use round numbers (₹10,000, ₹50,000, ₹1,00,000). Real transactions tend to have odd amounts. Any round amount ≥ ₹10,000 adds suspicion.</p>
+        </div>
+      </div>
+      <div class="alert-box">
+        <div class="a-icon">📈</div>
+        <div>
+          <h4>Rule 5 — Volume Spike (+20 pts)</h4>
+          <p>If the total money sent in the last 5 minutes exceeds ₹1,00,000, a volume spike alert triggers. This catches coordinated fund-draining attacks.</p>
+        </div>
+      </div>
+      <div class="alert-box" style="border-color: rgba(0,229,255,.3);">
+        <div class="a-icon">🧮</div>
+        <div>
+          <h4>Fraud Score Calculation</h4>
+          <p>Score 0–49 = SAFE (green) | Score 50–79 = SUSPICIOUS (orange) | Score 80–100 = HIGH FRAUD RISK (red). A score ≥ 50 triggers a fraud alert modal.</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Fraud Alert Modal ── -->
+<div id="fraud-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-icon">🚨</div>
+    <h3>⚠ FRAUD ALERT DETECTED</h3>
+    <p id="modal-subtitle">This transaction has been flagged as suspicious</p>
+    <div class="score-display">
+      <div class="score-circle">
+        <div class="score-num" id="modal-score">0</div>
+        <div class="score-lbl">RISK SCORE</div>
+      </div>
+    </div>
+    <div class="flags-list" id="modal-flags"></div>
+    <div class="modal-actions">
+      <button class="btn-dismiss" onclick="closeFraudModal()">Acknowledge</button>
+      <button class="btn-confirm-fraud" onclick="closeFraudModal()">Mark as Reviewed</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast Notification ── -->
+<div class="toast" id="toast">
+  <span class="toast-icon">✅</span>
+  <span id="toast-msg">Transaction completed successfully!</span>
+</div>
+
+<script>
+const API = "http://127.0.0.1:5000/api";
+let currentUser = null;
+
+// ─────────────────────────────────────
+//  AUTH
+// ─────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t,i)=>{
+    t.classList.toggle('active', (tab==='login' ? i===0 : i===1));
+  });
+  document.getElementById('login-form').style.display    = tab==='login'    ? 'block':'none';
+  document.getElementById('register-form').style.display = tab==='register' ? 'block':'none';
+  clearAuthMsg();
+}
+
+function showAuthMsg(msg, type) {
+  const el = document.getElementById('auth-msg');
+  el.textContent = msg;
+  el.className   = `auth-message ${type}`;
+}
+function clearAuthMsg() {
+  const el = document.getElementById('auth-msg');
+  el.className = 'auth-message'; el.textContent = '';
+}
+
+async function doLogin() {
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value.trim();
+  if (!username || !password) return showAuthMsg("Fill in all fields.", "error");
+
+  const btn = document.querySelector('#login-form .btn-primary');
+  btn.innerHTML = '<span class="spinner"></span>Logging in...';
+  btn.disabled  = true;
+
+  try {
+    const res  = await fetch(`${API}/login`, {
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    const data = await res.json();
+    if (!res.ok) return showAuthMsg(data.error, "error");
+    currentUser = data.user;
+    enterApp();
+  } catch(e) {
+    showAuthMsg("Cannot connect to server. Is backend running?", "error");
+  } finally {
+    btn.innerHTML = 'Login →'; btn.disabled = false;
+  }
+}
+
+async function doRegister() {
+  const username = document.getElementById('reg-username').value.trim();
+  const email    = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value.trim();
+  if (!username||!email||!password) return showAuthMsg("Fill in all fields.", "error");
+
+  const btn = document.querySelector('#register-form .btn-primary');
+  btn.innerHTML = '<span class="spinner"></span>Creating...'; btn.disabled=true;
+
+  try {
+    const res  = await fetch(`${API}/register`, {
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username, email, password})
+    });
+    const data = await res.json();
+    if (!res.ok) return showAuthMsg(data.error, "error");
+    showAuthMsg(data.message + " Now login.", "success");
+    setTimeout(()=>switchTab('login'), 1500);
+  } catch(e) {
+    showAuthMsg("Cannot connect to server.", "error");
+  } finally {
+    btn.innerHTML = 'Create Account →'; btn.disabled=false;
+  }
+}
+
+async function doLogout() {
+  await fetch(`${API}/logout`, {method:'POST', credentials:'include'});
+  currentUser = null;
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('auth-screen').classList.remove('hidden');
+}
+
+// ─────────────────────────────────────
+//  APP
+// ─────────────────────────────────────
+function enterApp() {
+  document.getElementById('auth-screen').classList.add('hidden');
+  const app = document.getElementById('app');
+  app.style.display = 'flex';
+  app.classList.add('visible');
+  document.getElementById('sidebar-uname').textContent   = currentUser.username;
+  document.getElementById('sidebar-avatar').textContent  = currentUser.username[0].toUpperCase();
+  loadDashboard();
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById(`page-${name}`).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    if(n.textContent.trim().toLowerCase().includes(name==='send'?'send':name==='history'?'hist':name==='alerts'?'fraud':name))
+      n.classList.add('active');
+  });
+  if (name==='dashboard') loadDashboard();
+  if (name==='history')   loadHistory();
+}
+
+// ─────────────────────────────────────
+//  STATS / DASHBOARD
+// ─────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const [statsRes, txnRes] = await Promise.all([
+      fetch(`${API}/stats`,        {credentials:'include'}),
+      fetch(`${API}/transactions`, {credentials:'include'})
+    ]);
+    const stats = await statsRes.json();
+    const txns  = await txnRes.json();
+
+    document.getElementById('stat-balance').textContent = `₹${stats.balance.toLocaleString('en-IN')}`;
+    document.getElementById('stat-safe').textContent    = stats.safe_transactions;
+    document.getElementById('stat-fraud').textContent   = stats.fraud_detected;
+    document.getElementById('stat-total').textContent   = stats.total_transactions;
+    document.getElementById('stat-rate').textContent    = `${stats.fraud_rate}%`;
+
+    const recent = txns.slice(0,5);
+    document.getElementById('recent-count').textContent = `${recent.length} records`;
+    document.getElementById('recent-table-body').innerHTML = recent.length ? buildTable(recent) : emptyState();
+  } catch(e) { console.error(e); }
+}
+
+async function loadHistory() {
+  try {
+    const res  = await fetch(`${API}/transactions`, {credentials:'include'});
+    const txns = await res.json();
+    document.getElementById('history-count').textContent    = `${txns.length} records`;
+    document.getElementById('history-table-body').innerHTML = txns.length ? buildTable(txns) : emptyState();
+  } catch(e) {}
+}
+
+function buildTable(txns) {
+  let html = `<table><thead><tr>
+    <th>#ID</th><th>Receiver</th><th>Amount</th>
+    <th>Risk Score</th><th>Status</th><th>Date / Time</th>
+  </tr></thead><tbody>`;
+  txns.forEach(t => {
+    const score = t.fraud_score;
+    const scoreBadge = score >= 80
+      ? `<span class="badge badge-red">🔴 ${score} — HIGH RISK</span>`
+      : score >= 50
+      ? `<span class="badge badge-orange">🟠 ${score} — SUSPECT</span>`
+      : score >= 25
+      ? `<span class="badge badge-orange" style="opacity:.7">🟡 ${score} — LOW</span>`
+      : `<span class="badge badge-green">🟢 ${score} — SAFE</span>`;
+
+    const statusBadge = t.is_fraud
+      ? `<span class="badge badge-red">Fraud</span>`
+      : `<span class="badge badge-green">Safe</span>`;
+
+    html += `<tr>
+      <td><span class="badge badge-blue">#${t.id}</span></td>
+      <td><b>${t.receiver}</b><br><span style="font-size:11px;color:var(--muted)">${t.description||'—'}</span></td>
+      <td class="amount-cell">₹${t.amount.toLocaleString('en-IN')}</td>
+      <td>${scoreBadge}</td>
+      <td>${statusBadge}</td>
+      <td style="font-size:12px;font-family:'Space Mono',monospace;color:var(--muted)">${t.timestamp}</td>
+    </tr>`;
+  });
+  return html + '</tbody></table>';
+}
+
+function emptyState() {
+  return `<div class="empty-state"><div class="e-icon">📭</div><p>No transactions found.</p></div>`;
+}
+
+// ─────────────────────────────────────
+//  TRANSACTION
+// ─────────────────────────────────────
+function updateRiskPreview() {
+  const amount = parseFloat(document.getElementById('txn-amount').value) || 0;
+  const preview = document.getElementById('risk-preview');
+  if (amount < 1) { preview.classList.remove('show'); return; }
+  preview.classList.add('show');
+
+  let est = 0;
+  if (amount > 50000) est += 40;
+  else if (amount > 25000) est += 15;
+  if (amount >= 10000 && amount % 10000 === 0) est += 10;
+  est = Math.min(est, 100);
+
+  const bar   = document.getElementById('risk-bar');
+  const label = document.getElementById('risk-percent-label');
+  bar.style.width = `${est}%`;
+  bar.style.background = est >= 50 ? 'var(--red)' : est >= 25 ? 'var(--orange)' : 'var(--green)';
+  label.textContent = `${est}% estimated`;
+}
+
+async function sendTransaction() {
+  const receiver = document.getElementById('txn-receiver').value.trim();
+  const amount   = parseFloat(document.getElementById('txn-amount').value);
+  const desc     = document.getElementById('txn-desc').value.trim();
+  const msgEl    = document.getElementById('send-msg');
+  const btn      = document.getElementById('send-btn');
+
+  msgEl.className = 'auth-message';
+
+  if (!receiver || !amount || amount <= 0) {
+    msgEl.className = 'auth-message error';
+    msgEl.textContent = 'Enter receiver name and a valid amount.';
+    return;
+  }
+
+  btn.innerHTML = '<span class="spinner"></span>Processing...'; btn.disabled=true;
+
+  try {
+    const res  = await fetch(`${API}/transaction`, {
+      method:'POST', credentials:'include',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({receiver, amount, description: desc})
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      msgEl.className   = 'auth-message error';
+      msgEl.textContent = data.error;
+      return;
+    }
+
+    const analysis = data.fraud_analysis;
+
+    // Clear form
+    document.getElementById('txn-receiver').value = '';
+    document.getElementById('txn-amount').value   = '';
+    document.getElementById('txn-desc').value     = '';
+    document.getElementById('risk-preview').classList.remove('show');
+
+    if (analysis.is_fraud) {
+      showFraudModal(analysis, amount, receiver);
+    } else {
+      showToast(`₹${amount.toLocaleString('en-IN')} sent to ${receiver} — Score: ${analysis.score}/100`);
+    }
+
+    // Refresh stats
+    loadDashboard();
+  } catch(e) {
+    msgEl.className   = 'auth-message error';
+    msgEl.textContent = 'Server error. Make sure backend is running.';
+  } finally {
+    btn.innerHTML = 'Send Transaction ➜'; btn.disabled=false;
+  }
+}
+
+// ─────────────────────────────────────
+//  FRAUD MODAL
+// ─────────────────────────────────────
+function showFraudModal(analysis, amount, receiver) {
+  document.getElementById('modal-score').textContent   = analysis.score;
+  document.getElementById('modal-subtitle').textContent =
+    `₹${amount.toLocaleString('en-IN')} → ${receiver} has been flagged`;
+
+  const flagsHtml = analysis.flags.map(f =>
+    `<div class="flag-item">${f}</div>`
+  ).join('');
+  document.getElementById('modal-flags').innerHTML = flagsHtml || '<div class="flag-item">General suspicion</div>';
+
+  document.getElementById('fraud-modal').classList.remove('hidden');
+}
+function closeFraudModal() {
+  document.getElementById('fraud-modal').classList.add('hidden');
+}
+
+// ─────────────────────────────────────
+//  TOAST
+// ─────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3500);
+}
+
+// ─────────────────────────────────────
+//  AUTO-LOGIN CHECK
+// ─────────────────────────────────────
+(async () => {
+  try {
+    const res = await fetch(`${API}/me`, {credentials:'include'});
+    if (res.ok) {
+      currentUser = await res.json();
+      enterApp();
+    }
+  } catch(e) {}
+})();
+</script>
+</body>
+</html>
