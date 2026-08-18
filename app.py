@@ -314,6 +314,11 @@ def get_stats():
     })
 
 # ─────────────────────────────────────────
+from flask import send_file
+
+@app.route("/")
+def home():
+    return send_file("index.html")
 if __name__ == "__main__":
     print("🚀  Starting Fraud Detection Server on http://127.0.0.1:5000")
     app.run(debug=True, port=5000)
