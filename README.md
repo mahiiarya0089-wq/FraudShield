@@ -1,380 +1,245 @@
-#  FraudShield — Intelligent Transaction Monitoring & Fraud Detection System
+# FraudShield
 
-FraudShield is a full-stack transaction monitoring application that combines a **Flask-based banking simulation**, **rule-based fraud analysis**, and a **Machine Learning fraud detection model** to identify potentially fraudulent transactions.
+FraudShield is a full-stack educational banking simulation and fraud monitoring project. It combines a Flask REST API, SQLite persistence, a responsive HTML/CSS/JavaScript dashboard, rule-based fraud checks, and an optional trained machine learning model.
 
-The system provides a transaction dashboard, authentication, transaction history, risk analysis, and an ML-powered fraud detection pipeline using **Random Forest**.
+FraudShield is built for portfolio and interview demonstration. It does not connect to real banks, payment networks, or production fraud systems.
 
->  **Disclaimer:** FraudShield is an educational/project application and does not connect to real banking or payment systems.
+## Features
 
----
+- User registration, login, logout, and session-protected APIs
+- Password hashing with Werkzeug
+- Simulated account balance
+- Deposit/refill workflow
+- Transfer/payment workflow with balance checks
+- Rule-based fraud scoring with clear reasons
+- Optional Random Forest ML fraud probability layer
+- LOW, MEDIUM, and HIGH risk levels
+- Completed, flagged, and blocked transaction statuses
+- Dashboard statistics from real database data
+- Transaction trend and risk distribution charts
+- Recent transactions and full searchable/filterable transaction history
+- Fraud alert section for medium/high risk activity
+- Consistent JSON API responses
+- Basic pytest coverage for core backend behavior
 
-##  Key Features
+## Tech Stack
 
-*  User registration, login and logout
-*  Simulated money transactions
-*  Transaction monitoring dashboard
-*  Transaction history
-*  Rule-based fraud detection
-*  Machine Learning fraud detection
-*  Class-imbalance handling using balanced Random Forest
-*  Fraud probability prediction
-*  Classification report and confusion matrix
-*  ROC-AUC evaluation
-*  Saved ML model using Joblib
-*  Real-time frontend risk preview
+- Backend: Python, Flask, Flask-CORS
+- Database: SQLite
+- Frontend: HTML, CSS, JavaScript, Canvas charts
+- Machine Learning: pandas, scikit-learn, joblib
+- Testing: pytest
 
----
-
-##  Fraud Detection Approach
-
-FraudShield uses **two complementary detection approaches**.
-
-### 1. Rule-Based Detection
-
-Transactions can be evaluated using predefined behavioral rules such as:
-
-| Rule                    | Description                                   | Score Impact |
-| ----------------------- | --------------------------------------------- | -----------: |
-| 💰 High Value           | Transaction above ₹50,000                     |          +40 |
-| ⚡ Frequent Transactions | Multiple transactions within 60 seconds       |   +25 to +45 |
-| 🌙 Odd Hours            | Transactions between 12 AM–5 AM               |          +15 |
-| 🔢 Round Amount         | Large round-number transactions               |          +10 |
-| 📈 Volume Spike         | High transaction volume within a short period |          +20 |
-
-### Risk Classification
-
-|  Score | Classification |
-| -----: | -------------- |
-|   0–49 | 🟢 Safe        |
-|  50–79 | 🟠 Suspicious  |
-| 80–100 | 🔴 High Risk   |
-
----
-
-#  Machine Learning Pipeline
-
-FraudShield also includes a dedicated ML pipeline for detecting fraudulent transactions from historical transaction data.
-
-### Algorithm
-
-The current model uses:
-
-**Random Forest Classifier**
-
-with:
-
-* `n_estimators = 100`
-* `class_weight = "balanced"`
-* `random_state = 42`
-* `n_jobs = -1`
-
-The balanced class weighting is particularly useful because fraudulent transactions represent a much smaller portion of the dataset than legitimate transactions.
-
-### ML Workflow
+## System Architecture
 
 ```text
-Historical Transaction Dataset
-              ↓
-       Data Loading
-              ↓
-    Feature / Target Split
-              ↓
-   Stratified Train/Test Split
-              ↓
-      Random Forest Model
-              ↓
-       Fraud Prediction
-              ↓
- ┌────────────┬──────────────┐
- ↓            ↓              ↓
-Classification  Confusion   ROC-AUC
-   Report       Matrix       Score
-              ↓
-       Save Trained Model
-              ↓
-       fraud_model.joblib
+Browser dashboard
+      |
+      v
+Flask REST API
+      |
+      +-- SQLite users and transactions
+      |
+      +-- Rule-based fraud detector
+      |
+      +-- Optional ML model: ml/saved_model/fraud_model.joblib
 ```
 
----
+## Fraud Detection Approach
 
-##  Model Evaluation
+FraudShield combines understandable rules with the saved ML model when available. Rules are intentionally simple so the system is easy to explain in a student portfolio project.
 
-The training pipeline evaluates the model using:
+Rules currently include:
 
-### Classification Report
+- High transaction amount
+- Multiple transfers within a short time
+- Late-night transaction timing
+- Large round-number amounts
+- High total transfer volume within five minutes
+- Insufficient balance detection
 
-Provides:
+The ML model expects the common credit-card fraud dataset feature shape: `Time`, `V1` to `V28`, and `Amount`. For normal app transfers, the dashboard has only banking-style inputs, so the backend uses the real amount and neutral placeholder values for the PCA-style model features. The rule-based reasons are therefore the most explainable part of the live transaction workflow.
 
-* Precision
-* Recall
-* F1-score
-* Support
+## Risk Scoring
 
-### Confusion Matrix
+| Score | Risk Level | Default Behavior |
+| ---: | --- | --- |
+| 0-30 | LOW | Transaction completed |
+| 31-70 | MEDIUM | Transaction completed and flagged |
+| 71-100 | HIGH | Transaction blocked for review |
 
-Used to analyze:
+## Screenshots
 
-* True Positives
-* True Negatives
-* False Positives
-* False Negatives
+Add screenshots here after running the app locally:
 
-### ROC-AUC
-
-The model also calculates the **ROC-AUC score** using predicted fraud probabilities.
-
-> Model performance values should be generated from the current training run rather than hard-coded into the documentation.
-
----
-
-##  System Architecture
-
-```text
-                 ┌─────────────────────┐
-                 │      Frontend       │
-                 │ HTML / CSS / JS     │
-                 └──────────┬──────────┘
-                            │
-                            ▼
-                 ┌─────────────────────┐
-                 │    Flask Backend    │
-                 │       app.py        │
-                 └──────────┬──────────┘
-                            │
-                 ┌──────────┴──────────┐
-                 ▼                     ▼
-        ┌─────────────────┐   ┌──────────────────┐
-        │ Rule-Based      │   │ ML Fraud Model   │
-        │ Fraud Engine    │   │ Random Forest    │
-        └────────┬────────┘   └─────────┬────────┘
-                 │                      │
-                 └──────────┬───────────┘
-                            ▼
-                   Transaction Analysis
-                            │
-                            ▼
-                     Risk / Prediction
-```
-
----
-
-##  Tech Stack
-
-### Backend
-
-* Python
-* Flask
-* Flask-CORS
-* SQLite
-* REST API
-
-### Machine Learning
-
-* Python
-* Pandas
-* Scikit-learn
-* Random Forest
-* Joblib
-
-### Frontend
-
-* HTML
-* CSS
-* JavaScript
-* Responsive dashboard UI
-
-### Development Tools
-
-* Git
-* GitHub
-* VS Code
-* Python Virtual Environment
-
----
+- Login/register screen
+- Dashboard
+- Deposit and transfer workflow
+- Transaction history
+- Fraud alerts
 
 ## Project Structure
 
 ```text
 FraudShield/
-│
-├── app.py
-├── index.html
-├── README.md
-├── .gitignore
-│
-├── ml/
-│   ├── train_model.py
-│   └── saved_model/
-│       └── fraud_model.joblib
-│
-└── data/
-    └── creditcard.csv
+|-- app.py
+|-- index.html
+|-- requirements.txt
+|-- .env.example
+|-- .gitignore
+|-- README.md
+|-- tests/
+|   `-- test_app.py
+|-- ml/
+|   |-- train_model.py
+|   `-- saved_model/
+|       `-- fraud_model.joblib
+`-- data/
+    `-- creditcard.csv
 ```
 
-> `data/creditcard.csv` is intentionally excluded from GitHub because the dataset is approximately 150 MB and exceeds GitHub's normal per-file limit.
+`data/creditcard.csv` is intentionally ignored because it is a large local dataset. Local SQLite databases are also ignored.
 
-The local SQLite database is also excluded from version control.
-
----
-
-# ⚙️ Installation & Setup
-
-## 1. Clone the repository
+## Installation
 
 ```bash
 git clone https://github.com/mahiiarya0089-wq/FraudShield.git
 cd FraudShield
+python -m venv venv
 ```
 
-## 2. Create a virtual environment
-
-### Windows
+Windows:
 
 ```powershell
-python -m venv venv
 venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
-### macOS / Linux
+macOS/Linux:
 
 ```bash
-python3 -m venv venv
 source venv/bin/activate
+pip install -r requirements.txt
 ```
 
-## 3. Install dependencies
-
-```bash
-pip install flask flask-cors pandas scikit-learn joblib
-```
-
-## 4. Run the application
+## Running The Application
 
 ```bash
 python app.py
 ```
 
-The Flask server should start at:
+Open:
 
 ```text
 http://127.0.0.1:5000
 ```
 
-Open the address in your browser.
-
----
-
-# 🤖 Training the ML Model
-
-The training script expects the dataset at:
-
-```text
-data/creditcard.csv
-```
-
-After placing the dataset in the `data` directory, run:
+Optional environment setup:
 
 ```bash
-python ml/train_model.py
+cp .env.example .env
 ```
 
-The script will:
+Set a strong `SECRET_KEY` before sharing or deploying the project.
 
-1. Load the transaction dataset
-2. Separate features and target
-3. Display class distribution
-4. Perform a stratified train/test split
-5. Train the Random Forest classifier
-6. Generate predictions
-7. Calculate evaluation metrics
-8. Calculate ROC-AUC
-9. Save the trained model
+## API Endpoints
 
-The trained model is saved as:
+All API responses use:
+
+```json
+{
+  "success": true,
+  "message": "Readable message",
+  "data": {}
+}
+```
+
+Authentication:
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| POST | `/api/register` | Create a user |
+| POST | `/api/login` | Log in |
+| POST | `/api/logout` | Log out |
+| GET | `/api/me` | Load current session user |
+
+Banking and monitoring:
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| POST | `/api/deposit` | Add simulated money |
+| POST | `/api/transaction` | Create a monitored transfer |
+| GET | `/api/transactions` | Retrieve transaction history |
+| GET | `/api/stats` | Retrieve dashboard statistics |
+| POST | `/api/ml-predict` | Run direct ML prediction with model features |
+
+## Database
+
+SQLite stores:
+
+- `users`: username, email, hashed password, balance, creation date
+- `transactions`: transaction ID, user, type, recipient, amount, timestamp, risk score, risk level, status, and fraud reasons
+
+The app creates missing tables automatically and adds missing transaction columns for older local databases.
+
+## Machine Learning Model
+
+The saved model lives at:
 
 ```text
 ml/saved_model/fraud_model.joblib
 ```
 
----
+To retrain it, place the dataset at:
 
-# 🔌 API Endpoints
-
-## Authentication
-
-| Method | Endpoint        | Purpose          |
-| ------ | --------------- | ---------------- |
-| POST   | `/api/register` | Register a user  |
-| POST   | `/api/login`    | Login            |
-| POST   | `/api/logout`   | Logout           |
-| GET    | `/api/me`       | Get current user |
-
-## Transactions
-
-| Method | Endpoint            | Purpose                         |
-| ------ | ------------------- | ------------------------------- |
-| POST   | `/api/transaction`  | Create/analyze transaction      |
-| GET    | `/api/transactions` | Retrieve transaction history    |
-| GET    | `/api/stats`        | Retrieve transaction statistics |
-
----
-
-##  Example Fraud Analysis Response
-
-```json
-{
-  "score": 65,
-  "flags": [
-    "HIGH_VALUE",
-    "FREQUENT"
-  ],
-  "is_fraud": true
-}
+```text
+data/creditcard.csv
 ```
 
----
+Then run:
 
-#  Future Improvements
+```bash
+python ml/train_model.py
+```
 
-*  Integrate ML predictions directly into the transaction API
-*  Add advanced fraud analytics and visualizations
-*  Compare multiple ML algorithms
-*  Hyperparameter tuning
-*  Add precision-recall analysis
-*  Implement stronger authentication and authorization
-*  Improve mobile responsiveness
-*  Deploy the application to a cloud platform
-*  Add transaction alerts
-*  Explore anomaly-detection techniques for previously unseen fraud patterns
+## Example Workflow
 
----
+1. Register a new account.
+2. Log in.
+3. Review the starting simulated balance.
+4. Add a deposit/refill.
+5. Create a normal transfer.
+6. Create a large or suspicious transfer.
+7. Review risk score, risk level, status, and fraud reasons.
+8. Open transaction history and alerts.
+9. Log out.
 
-#  Project Goals
+## Testing
 
-FraudShield was developed to demonstrate the practical application of:
+```bash
+pytest
+```
 
-* Full-stack web development
-* Machine Learning
-* Fraud detection
-* Data preprocessing
-* Imbalanced classification
-* Model evaluation
-* REST APIs
-* Database management
-* Git/GitHub project management
+The tests use a temporary SQLite database and cover registration, login, unauthorized access, deposit, normal transfers, insufficient balance, fraud scoring, and transaction retrieval.
 
----
+## Limitations
 
-## 👩 Author
+- This is a simulated educational project, not a bank-grade fraud system.
+- The dashboard does not move real money.
+- The ML model is trained on a public credit-card style dataset and does not represent real banking production behavior.
+- The live transfer form does not collect real `V1` to `V28` features, so rule-based explanations are the primary live detection mechanism.
 
-**Mahee Arya**
+## Future Improvements
 
-BCA — Artificial Intelligence & Data Science
+- Split the backend into `backend/` modules as the project grows
+- Add Alembic or Flask-Migrate for formal database migrations
+- Add password reset and email verification
+- Add admin review actions for blocked transactions
+- Add model versioning and richer ML explanations
+- Add deployment configuration
 
+## Author
+
+Mahee Arya  
+BCA - Artificial Intelligence & Data Science  
 GitHub: [@mahiiarya0089-wq](https://github.com/mahiiarya0089-wq)
-
----
-
-##  Support
-
-If you find this project useful, consider giving the repository a ⭐ on GitHub.
